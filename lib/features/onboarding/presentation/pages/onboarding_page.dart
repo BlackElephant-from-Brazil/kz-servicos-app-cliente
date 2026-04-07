@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/core/widgets/dust_particles.dart';
+import 'package:kz_servicos_app/core/widgets/mesh_gradient_background.dart';
 import 'package:kz_servicos_app/features/onboarding/presentation/widgets/onboarding_dots.dart';
 import 'package:kz_servicos_app/features/onboarding/presentation/widgets/onboarding_slide.dart';
 
@@ -21,22 +23,25 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: 'Solicitar serviços KZ ficou ainda mais fácil',
       subtitle:
           'Nosso novo APP conecta você ao motorista com poucos cliques. Rápido e prático.',
-      backgroundColor: AppColors.highlight,
+      meshColors: AppColors.meshSlide1,
       textColor: AppColors.white,
+      lottieAsset: 'assets/animations/smartphone_tap.json',
     ),
     (
       title: 'Segurança e Confiabilidade',
       subtitle:
           'Continuamos moderando e monitorando 24h. Nossos afiliados passam por uma etapa rigorosa de aprovação.',
-      backgroundColor: AppColors.secondary,
+      meshColors: AppColors.meshSlide2,
       textColor: AppColors.white,
+      lottieAsset: 'assets/animations/shield_check.json',
     ),
     (
       title: 'Agilidade para agendamento',
       subtitle:
           'Agendar viagens ficou rápido e prático. Conte com acompanhamento em tempo real do seu agendamento.',
-      backgroundColor: AppColors.background,
+      meshColors: AppColors.meshSlide3,
       textColor: AppColors.textPrimary,
+      lottieAsset: 'assets/animations/calendar_clock.json',
     ),
   ];
 
@@ -59,17 +64,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  Color _interpolateBackgroundColor() {
-    final lowerIndex = _currentPage.floor();
-    final upperIndex = _currentPage.ceil();
-    final t = _currentPage - lowerIndex;
+  List<Color> _interpolateMeshColors() {
+    final lowerIndex = _currentPage.floor().clamp(0, _slides.length - 1);
+    final upperIndex = _currentPage.ceil().clamp(0, _slides.length - 1);
+    final t = _currentPage - _currentPage.floor();
 
-    final lowerColor =
-        _slides[lowerIndex.clamp(0, _slides.length - 1)].backgroundColor;
-    final upperColor =
-        _slides[upperIndex.clamp(0, _slides.length - 1)].backgroundColor;
+    final lowerColors = _slides[lowerIndex].meshColors;
+    final upperColors = _slides[upperIndex].meshColors;
 
-    return Color.lerp(lowerColor, upperColor, t) ?? lowerColor;
+    return List.generate(
+      lowerColors.length,
+      (i) => Color.lerp(lowerColors[i], upperColors[i], t) ?? lowerColors[i],
+    );
   }
 
   Color _interpolateTextColor() {
@@ -81,6 +87,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
         _slides[lowerIndex.clamp(0, _slides.length - 1)].textColor;
     final upperColor =
         _slides[upperIndex.clamp(0, _slides.length - 1)].textColor;
+
+    return Color.lerp(lowerColor, upperColor, t) ?? lowerColor;
+  }
+
+  Color _interpolateParticleColor() {
+    final lowerIndex = _currentPage.floor().clamp(0, _slides.length - 1);
+    final upperIndex = _currentPage.ceil().clamp(0, _slides.length - 1);
+    final t = _currentPage - _currentPage.floor();
+
+    final lowerColor = lowerIndex < 2 ? AppColors.white : AppColors.textPrimary;
+    final upperColor = upperIndex < 2 ? AppColors.white : AppColors.textPrimary;
 
     return Color.lerp(lowerColor, upperColor, t) ?? lowerColor;
   }
@@ -106,35 +123,48 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = _interpolateBackgroundColor();
+    final meshColors = _interpolateMeshColors();
     final textColor = _interpolateTextColor();
+    final particleColor = _interpolateParticleColor();
 
     return Scaffold(
-      body: Container(
-        color: backgroundColor,
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildSkipButton(textColor),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    final slide = _slides[index];
-                    return OnboardingSlide(
-                      title: slide.title,
-                      subtitle: slide.subtitle,
-                      textColor: slide.textColor,
-                    );
-                  },
-                ),
-              ),
-              _buildBottomSection(textColor),
-              const SizedBox(height: 48),
-            ],
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: MeshGradientBackground(colors: meshColors),
           ),
-        ),
+          Positioned.fill(
+            child: DustParticles(
+              color: particleColor,
+              scrollOffset: _currentPage,
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildSkipButton(textColor),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      return OnboardingSlide(
+                        title: slide.title,
+                        subtitle: slide.subtitle,
+                        textColor: slide.textColor,
+                        lottieAsset: slide.lottieAsset,
+                        isActive: _currentIndex == index,
+                      );
+                    },
+                  ),
+                ),
+                _buildBottomSection(textColor),
+                const SizedBox(height: 48),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
