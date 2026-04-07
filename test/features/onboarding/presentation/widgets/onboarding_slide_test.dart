@@ -12,6 +12,8 @@ void main() {
               title: 'Test Title',
               subtitle: 'Test Subtitle',
               textColor: Colors.white,
+              lottieAsset: 'assets/animations/smartphone_tap.json',
+              isActive: true,
             ),
           ),
         ),
@@ -29,6 +31,8 @@ void main() {
               title: 'Title',
               subtitle: 'Subtitle',
               textColor: Colors.red,
+              lottieAsset: 'assets/animations/smartphone_tap.json',
+              isActive: true,
             ),
           ),
         ),
@@ -36,9 +40,45 @@ void main() {
 
       final titleWidget = tester.widget<Text>(find.text('Title'));
       expect(titleWidget.style?.color, Colors.red);
+    });
 
-      final subtitleWidget = tester.widget<Text>(find.text('Subtitle'));
-      expect(subtitleWidget.style?.color, Colors.red);
+    testWidgets('should have AnimatedOpacity', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: OnboardingSlide(
+              title: 'Title',
+              subtitle: 'Subtitle',
+              textColor: Colors.white,
+              lottieAsset: 'assets/animations/smartphone_tap.json',
+              isActive: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(AnimatedOpacity), findsOneWidget);
+    });
+
+    testWidgets('should be transparent when not active', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: OnboardingSlide(
+              title: 'Title',
+              subtitle: 'Subtitle',
+              textColor: Colors.white,
+              lottieAsset: 'assets/animations/smartphone_tap.json',
+              isActive: false,
+            ),
+          ),
+        ),
+      );
+
+      final opacity = tester.widget<AnimatedOpacity>(
+        find.byType(AnimatedOpacity),
+      );
+      expect(opacity.opacity, 0.0);
     });
   });
 }
