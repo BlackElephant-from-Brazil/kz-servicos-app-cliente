@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kz_servicos_app/features/onboarding/presentation/pages/onboarding_page.dart';
 
 import 'package:kz_servicos_app/main.dart';
 
@@ -8,6 +9,6 @@ void main() {
     await tester.pumpWidget(const KzServicosApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Onboarding'), findsOneWidget);
+    expect(find.byType(OnboardingPage), findsOneWidget);
   });
 }
