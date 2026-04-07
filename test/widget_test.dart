@@ -7,7 +7,7 @@ void main() {
   testWidgets('KzServicosApp renders without crashing',
       (WidgetTester tester) async {
     await tester.pumpWidget(const KzServicosApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(OnboardingPage), findsOneWidget);
   });
