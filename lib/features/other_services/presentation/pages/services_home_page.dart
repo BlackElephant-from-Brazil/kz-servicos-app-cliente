@@ -16,7 +16,7 @@ class ServicesHomePage extends StatefulWidget {
 }
 
 class _ServicesHomePageState extends State<ServicesHomePage> {
-  int? _selectedCategoryIndex;
+  int? _selectedCategoryIndex = 0;
   final List<ServiceRequest> _requests = [];
 
   void _onCategorySelected(int index) {
@@ -115,13 +115,15 @@ class _GreetingHeader extends StatelessWidget {
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Text(
-          'Qual serviço\nvocê precisa?',
-          style: TextStyle(
-            fontFamily: AppTheme.fontFamilyTitle,
-            fontSize: 22,
-            color: AppColors.textPrimary,
-            height: 1.3,
+        child: Center(
+          child: Text(
+            'Qual serviço você precisa?',
+            style: TextStyle(
+              fontFamily: AppTheme.fontFamilyTitle,
+              fontSize: 22,
+              color: AppColors.textPrimary,
+              height: 1.3,
+            ),
           ),
         ),
       ),

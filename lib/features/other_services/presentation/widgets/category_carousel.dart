@@ -84,20 +84,6 @@ class _CategoryCarouselState extends State<CategoryCarousel> {
           count: widget.categories.length,
           currentIndex: _activePage,
         ),
-        const SizedBox(height: 12),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: Text(
-            widget.categories[_activePage].name,
-            key: ValueKey<int>(_activePage),
-            style: const TextStyle(
-              fontFamily: 'OutfitBlack',
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
       ],
     );
   }

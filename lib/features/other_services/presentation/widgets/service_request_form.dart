@@ -132,6 +132,7 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
   InputDecoration _inputDecoration(String hintText, {Widget? prefixIcon}) {
     return InputDecoration(
       hintText: hintText,
+      hintStyle: TextStyle(color: AppColors.textPrimary.withValues(alpha: 0.2)),
       prefixIcon: prefixIcon,
       filled: true,
       fillColor: Colors.white,
@@ -170,32 +171,60 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
           const SizedBox(height: 20),
           _buildSectionLabel('Detalhes do serviço'),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: _detailsController,
-            decoration: _inputDecoration(
-              'Você pode anexar fotos e vídeos clicando no botão de anexo',
-            ).copyWith(
-              suffixIcon: GestureDetector(
-                onTap: _showMediaPicker,
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.highlight.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.attach_file_rounded,
-                    color: AppColors.highlight,
-                    size: 26,
-                  ),
+          Stack(
+            children: [
+              TextFormField(
+                controller: _detailsController,
+                decoration: _inputDecoration(
+                  'Conte mais detalhes sobre o serviço...',
+                ).copyWith(
+                  contentPadding: const EdgeInsets.fromLTRB(16, 16, 60, 60),
+                ),
+                maxLines: 5,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Informe os detalhes' : null,
+              ),
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Anexe fotos e vídeos →',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textPrimary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _showMediaPicker,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.highlight,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.highlight.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            maxLines: 5,
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Informe os detalhes' : null,
+            ],
           ),
           if (_mediaPaths.isNotEmpty) ...[
             const SizedBox(height: 12),

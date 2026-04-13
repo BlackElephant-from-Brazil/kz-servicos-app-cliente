@@ -5,9 +5,22 @@ import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/features/other_services/data/models/service_request.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/request_list_tile.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class MyRequestsPage extends StatelessWidget {
   const MyRequestsPage({super.key});
+
+  void _onNavItemSelected(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.go('/trip');
+      case 1:
+        context.go('/services');
+      case 2:
+        // Profile — not yet implemented
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,25 +45,43 @@ class MyRequestsPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: requests.isEmpty
-          ? const _EmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-              itemCount: requests.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final request = requests[index];
-                return RequestListTile(
-                  request: request,
-                  onTap: () =>
-                      context.go('/services/requests/${request.id}'),
-                );
-              },
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          requests.isEmpty
+              ? const _EmptyState()
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 160),
+                  itemCount: requests.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final request = requests[index];
+                    return RequestListTile(
+                      request: request,
+                      onTap: () =>
+                          context.go('/services/requests/${request.id}'),
+                    );
+                  },
+                ),
+          Positioned(
+            bottom: 140,
+            right: 20,
+            child: FloatingActionButton(
+              backgroundColor: AppColors.highlight,
+              onPressed: () => context.go('/services'),
+              child: const Icon(Icons.add, color: Colors.white),
             ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.highlight,
-        onPressed: () => context.go('/services'),
-        child: const Icon(Icons.add, color: Colors.white),
+          ),
+          Positioned(
+            bottom: 24,
+            left: 20,
+            right: 20,
+            child: TripBottomNav(
+              selectedIndex: 1,
+              onItemSelected: (i) => _onNavItemSelected(context, i),
+            ),
+          ),
+        ],
       ),
     );
   }
