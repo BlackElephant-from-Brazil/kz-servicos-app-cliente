@@ -50,6 +50,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           _ScrollableContent(
             selectedCategory: selectedCategory,
@@ -115,7 +116,7 @@ class _GreetingHeader extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
         child: Text(
-          'Olá! Qual serviço\nvocê precisa?',
+          'Qual serviço\nvocê precisa?',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyTitle,
             fontSize: 22,

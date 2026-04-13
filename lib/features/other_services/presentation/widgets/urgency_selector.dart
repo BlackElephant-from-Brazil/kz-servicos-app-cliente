@@ -7,7 +7,7 @@ class UrgencySelector extends StatefulWidget {
   const UrgencySelector({
     required this.onUrgencyChanged,
     required this.onDateTimeChanged,
-    this.initialUrgency = UrgencyType.now,
+    this.initialUrgency = UrgencyType.scheduled,
     this.initialDateTime,
     super.key,
   });
@@ -131,19 +131,19 @@ class _UrgencySelectorState extends State<UrgencySelector>
       children: [
         Expanded(
           child: _ToggleButton(
-            label: 'Preciso agora',
-            icon: Icons.flash_on,
-            isActive: _selected == UrgencyType.now,
-            onTap: () => _selectUrgency(UrgencyType.now),
+            label: 'Quero agendar',
+            icon: Icons.calendar_today,
+            isActive: _selected == UrgencyType.scheduled,
+            onTap: () => _selectUrgency(UrgencyType.scheduled),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _ToggleButton(
-            label: 'Quero agendar',
-            icon: Icons.calendar_today,
-            isActive: _selected == UrgencyType.scheduled,
-            onTap: () => _selectUrgency(UrgencyType.scheduled),
+            label: 'Preciso agora',
+            icon: Icons.flash_on,
+            isActive: _selected == UrgencyType.now,
+            onTap: () => _selectUrgency(UrgencyType.now),
           ),
         ),
       ],

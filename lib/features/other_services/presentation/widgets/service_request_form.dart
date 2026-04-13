@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/features/other_services/data/models/service_category.dart';
@@ -26,9 +27,10 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
   final _detailsController = TextEditingController();
   final _addressController = TextEditingController();
 
-  UrgencyType _urgency = UrgencyType.now;
+  UrgencyType _urgency = UrgencyType.scheduled;
   DateTime? _scheduledDateTime;
   List<String> _mediaPaths = const [];
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -36,6 +38,73 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
     _detailsController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  void _showMediaPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Câmera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galeria'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickFromGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.videocam),
+                title: const Text('Vídeo (30s)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickVideo();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+    if (file != null) setState(() => _mediaPaths = [..._mediaPaths, file.path]);
+  }
+
+  Future<void> _pickFromGallery() async {
+    final file = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (file != null) setState(() => _mediaPaths = [..._mediaPaths, file.path]);
+  }
+
+  Future<void> _pickVideo() async {
+    final file = await _picker.pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(seconds: 30),
+    );
+    if (file != null) setState(() => _mediaPaths = [..._mediaPaths, file.path]);
   }
 
   void _handleSubmit() {
@@ -104,18 +173,37 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
           TextFormField(
             controller: _detailsController,
             decoration: _inputDecoration(
-              'Explique com mais detalhes o que precisa ser feito...',
+              'Você pode anexar fotos e vídeos clicando no botão de anexo',
+            ).copyWith(
+              suffixIcon: GestureDetector(
+                onTap: _showMediaPicker,
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.highlight.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.attach_file_rounded,
+                    color: AppColors.highlight,
+                    size: 26,
+                  ),
+                ),
+              ),
             ),
             maxLines: 5,
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Informe os detalhes' : null,
           ),
-          const SizedBox(height: 20),
-          _buildSectionLabel('Fotos e vídeo'),
-          const SizedBox(height: 8),
-          MediaAttachmentPicker(
-            onMediaChanged: (paths) => _mediaPaths = paths,
-          ),
+          if (_mediaPaths.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            MediaAttachmentPicker(
+              onMediaChanged: (paths) => setState(() => _mediaPaths = paths),
+              initialMediaPaths: _mediaPaths,
+            ),
+          ],
           const SizedBox(height: 20),
           _buildSectionLabel('Endereço (opcional)'),
           const SizedBox(height: 8),
