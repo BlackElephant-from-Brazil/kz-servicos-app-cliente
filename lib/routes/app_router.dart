@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/features/auth/presentation/pages/login_page.dart';
+import 'package:kz_servicos_app/features/profile/presentation/pages/profile_page.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/trip_home_page.dart';
 
@@ -18,6 +19,10 @@ abstract final class AppRouter {
       GoRoute(
         path: '/trip',
         builder: (context, state) => const TripHomePage(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfilePage(),
       ),
     ],
   );
