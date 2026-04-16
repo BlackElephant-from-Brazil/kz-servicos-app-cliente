@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/auth/presentation/widgets/auth_bottom_sheet.dart';
 
 class LoginPage extends StatelessWidget {
@@ -8,7 +12,26 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Bem-vindo(a), ${state.user.fullName}!',
+                ),
+                backgroundColor: Colors.green[700],
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          context.go('/trip');
+        }
+        // Errors are handled inline in the bottom sheet
+      },
+      child: Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -53,6 +76,7 @@ class LoginPage extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -104,20 +128,28 @@ class LoginPage extends StatelessWidget {
   }
 
   void _showLoginSheet(BuildContext context) {
+    final authCubit = context.read<AuthCubit>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AuthBottomSheet(initialMode: AuthMode.login),
+      builder: (_) => BlocProvider.value(
+        value: authCubit,
+        child: const AuthBottomSheet(initialMode: AuthMode.login),
+      ),
     );
   }
 
   void _showRegisterSheet(BuildContext context) {
+    final authCubit = context.read<AuthCubit>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AuthBottomSheet(initialMode: AuthMode.register),
+      builder: (_) => BlocProvider.value(
+        value: authCubit,
+        child: const AuthBottomSheet(initialMode: AuthMode.register),
+      ),
     );
   }
 }

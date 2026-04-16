@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/core/utils/phone_input_formatter.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/auth/presentation/widgets/apple_sign_in_button.dart';
 import 'package:kz_servicos_app/features/auth/presentation/widgets/google_sign_in_button.dart';
 
@@ -29,6 +32,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -66,7 +70,15 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthError) {
+          setState(() => _errorMessage = state.message);
+        } else if (state is AuthLoading) {
+          setState(() => _errorMessage = null);
+        }
+      },
+      child: Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -90,6 +102,10 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
               if (_isLogin) ...[
                 const SizedBox(height: 4),
                 _buildForgotPassword(),
+              ],
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 16),
+                _buildErrorBanner(),
               ],
               const SizedBox(height: 24),
               _buildPrimaryButton(),
@@ -117,6 +133,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -295,31 +312,85 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
     );
   }
 
-  Widget _buildPrimaryButton() {
-    return SizedBox(
+  Widget _buildErrorBanner() {
+    return Container(
       width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.of(context).pop();
-          context.go('/trip');
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.highlight,
-          foregroundColor: const Color(0xFF1A1A1A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamilyBody,
+                fontSize: 14,
+                color: Colors.red[700],
+              ),
+            ),
           ),
-          textStyle: TextStyle(
-            fontFamily: AppTheme.fontFamilyBody,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          elevation: 0,
-        ),
-        child: Text(_primaryButtonLabel()),
+        ],
       ),
     );
+  }
+
+  Widget _buildPrimaryButton() {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+        return SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : () => _onPrimaryPressed(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.highlight,
+              foregroundColor: const Color(0xFF1A1A1A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              textStyle: TextStyle(
+                fontFamily: AppTheme.fontFamilyBody,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              elevation: 0,
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  )
+                : Text(_primaryButtonLabel()),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onPrimaryPressed(BuildContext context) {
+    if (_isLogin) {
+      context.read<AuthCubit>().signIn(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+    } else if (_isForgotPassword) {
+      // TODO: implement forgot password
+      Navigator.of(context).pop();
+    } else {
+      // TODO: implement register
+      Navigator.of(context).pop();
+    }
   }
 
   Widget _buildSecondaryButton() {

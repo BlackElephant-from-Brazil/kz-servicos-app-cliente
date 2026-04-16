@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
+import 'package:kz_servicos_app/routes/app_router.dart';
 
-import 'package:kz_servicos_app/main.dart';
+class MockSignInWithEmail extends Mock implements SignInWithEmail {}
 
 void main() {
   testWidgets('KzServicosApp renders without crashing',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const KzServicosApp());
+    final mockSignIn = MockSignInWithEmail();
+    final authCubit = AuthCubit(signInWithEmail: mockSignIn);
+
+    await tester.pumpWidget(
+      BlocProvider<AuthCubit>.value(
+        value: authCubit,
+        child: MaterialApp.router(
+          title: 'KZ Serviços',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          routerConfig: AppRouter.router,
+        ),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(SplashPage), findsOneWidget);
@@ -16,5 +35,7 @@ void main() {
     // Advance past splash timer to avoid pending timer warning
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+
+    authCubit.close();
   });
 }

@@ -59,6 +59,7 @@ abstract final class AppRouter {
         path: '/trip-history',
         builder: (context, state) => const TripHistoryPage(),
       ),
+      GoRoute(
         path: '/services',
         builder: (context, state) => const ServicesHomePage(),
       ),

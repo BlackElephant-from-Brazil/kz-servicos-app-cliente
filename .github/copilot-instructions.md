@@ -72,7 +72,8 @@ Cada estado deve ter sua própria representação visual e lógica de transiçã
 - Faturado (PJ - requer dados da empresa)
 
 ## Regras Importantes
-- **NÃO conectar com banco de dados inicialmente** — usar dados mockados/locais
+- **Usar Supabase como backend** (Auth, Database, Realtime, Storage) — consultar skill `kz-database` para schema e endpoints
+- Em testes unitários, usar mocks/fakes dos repositórios — nunca chamar Supabase real em testes
 - Validação de endereços obrigatória
 - Notificações push para mudanças de status
 - Mapa em tempo real mostrando posição do motorista
