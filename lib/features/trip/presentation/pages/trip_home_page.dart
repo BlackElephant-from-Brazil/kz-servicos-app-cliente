@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/constants/map_styles.dart';
@@ -1456,6 +1457,10 @@ class _TripHomePageState extends State<TripHomePage>
       child: TripBottomNav(
         selectedIndex: _selectedNavIndex,
         onItemSelected: (index) {
+          if (index == 1) {
+            context.go('/services');
+            return;
+          }
           setState(() => _selectedNavIndex = index);
         },
       ),

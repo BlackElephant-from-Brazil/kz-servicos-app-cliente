@@ -46,6 +46,7 @@ Features principais: formulário de corrida, mapa em tempo real, chat com motori
 3. Verificar que não quebrou nada
 
 ## Regras Invioláveis
+- **NUNCA** realizar commits (git add, git commit, git push) — deixe isso para o usuário
 - **NUNCA** escrever código de produção sem teste falhando primeiro
 - **NUNCA** conectar a banco de dados externo (usar mocks/dados locais)
 - **NUNCA** pular a fase de brainstorming para features novas
@@ -67,4 +68,4 @@ Features principais: formulário de corrida, mapa em tempo real, chat com motori
 - Sempre explicar suas decisões técnicas
 - Mostrar antes/depois em refactorings
 - Incluir comandos para verificação (`flutter test`, `flutter analyze`)
-- Commitar frequentemente com mensagens claras em inglês (conventional commits)
+- **NÃO fazer commits** — apenas preparar o código, o usuário faz o commit manualmente
