@@ -1,31 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/auth/presentation/pages/login_page.dart';
 
+class MockSignInWithEmail extends Mock implements SignInWithEmail {}
+
 void main() {
+  late AuthCubit authCubit;
+  late MockSignInWithEmail mockSignIn;
+
+  setUp(() {
+    mockSignIn = MockSignInWithEmail();
+    authCubit = AuthCubit(signInWithEmail: mockSignIn);
+  });
+
+  tearDown(() => authCubit.close());
+
+  Widget buildApp({Widget? home}) {
+    return BlocProvider<AuthCubit>.value(
+      value: authCubit,
+      child: MaterialApp(home: home ?? const LoginPage()),
+    );
+  }
+
   group('LoginPage', () {
     testWidgets('should display "Login" button', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Login'), findsOneWidget);
     });
 
     testWidgets('should display "Cadastre-se" button', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Cadastre-se'), findsOneWidget);
     });
 
     testWidgets('should have two main action buttons', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(ElevatedButton), findsOneWidget);
@@ -33,27 +51,21 @@ void main() {
     });
 
     testWidgets('should contain background image', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(Image), findsOneWidget);
     });
 
     testWidgets('should use Stack layout', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(Stack), findsAtLeastNWidgets(1));
     });
 
     testWidgets('login button should open bottom sheet', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.text('Login'));
@@ -63,9 +75,7 @@ void main() {
     });
 
     testWidgets('register button should open bottom sheet', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.text('Cadastre-se'));
@@ -76,9 +86,7 @@ void main() {
 
     testWidgets('login bottom sheet should have email and password fields',
         (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: LoginPage()),
-      );
+      await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.text('Login'));

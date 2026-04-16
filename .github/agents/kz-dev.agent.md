@@ -48,9 +48,10 @@ Features principais: formulário de corrida, mapa em tempo real, chat com motori
 ## Regras Invioláveis
 - **NUNCA** realizar commits (git add, git commit, git push) — deixe isso para o usuário
 - **NUNCA** escrever código de produção sem teste falhando primeiro
-- **NUNCA** conectar a banco de dados externo (usar mocks/dados locais)
 - **NUNCA** pular a fase de brainstorming para features novas
 - **NUNCA** marcar trabalho como completo sem verificação
+- Usar **Supabase** como backend (Auth, Database, Realtime) — consultar skill `kz-database` para schema e endpoints
+- Em testes, usar mocks/fakes dos repositórios — nunca chamar Supabase real em testes
 - Seguir Effective Dart
 - Máximo 300 linhas por arquivo
 - Usar `const` sempre que possível
