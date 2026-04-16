@@ -1462,6 +1462,11 @@ class _TripHomePageState extends State<TripHomePage>
           } else {
             setState(() => _selectedNavIndex = index);
           }
+          if (index == 1) {
+            context.go('/services');
+            return;
+          }
+          setState(() => _selectedNavIndex = index);
         },
       ),
     );
