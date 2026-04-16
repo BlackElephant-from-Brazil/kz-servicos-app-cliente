@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
+import 'package:kz_servicos_app/features/profile/presentation/widgets/map_route_preview.dart';
 
 class ScheduledTripWidget extends StatelessWidget {
   final MockScheduledTrip trip;
   final VoidCallback? onDetailsTap;
+  final bool showMapPreview;
 
   const ScheduledTripWidget({
     super.key,
     required this.trip,
     this.onDetailsTap,
+    this.showMapPreview = false,
   });
 
   static const _monthAbbreviations = [
@@ -28,7 +31,7 @@ class ScheduledTripWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -43,17 +46,33 @@ class ScheduledTripWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatusBadge(status: trip.status),
-          const SizedBox(height: 14),
-          _RouteIndicator(
-            origin: trip.origin,
-            destination: trip.destination,
-          ),
-          const SizedBox(height: 14),
-          _BottomRow(
-            formattedDate: _formatDate(trip.scheduledAt),
-            driverName: trip.driverName,
-            onDetailsTap: onDetailsTap,
+          if (showMapPreview)
+            MapRoutePreview(
+              originLat: trip.originLat,
+              originLng: trip.originLng,
+              destinationLat: trip.destinationLat,
+              destinationLng: trip.destinationLng,
+              height: 120,
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _StatusBadge(status: trip.status),
+                const SizedBox(height: 14),
+                _RouteIndicator(
+                  origin: trip.origin,
+                  destination: trip.destination,
+                ),
+                const SizedBox(height: 14),
+                _BottomRow(
+                  formattedDate: _formatDate(trip.scheduledAt),
+                  driverName: trip.driverName,
+                  onDetailsTap: onDetailsTap,
+                ),
+              ],
+            ),
           ),
         ],
       ),

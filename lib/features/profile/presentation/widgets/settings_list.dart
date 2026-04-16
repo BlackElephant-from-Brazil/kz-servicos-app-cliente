@@ -11,6 +11,7 @@ class SettingsList extends StatefulWidget {
   final VoidCallback? onScheduledTripDetailsTap;
   final VoidCallback? onSecurityTap;
   final VoidCallback? onHistoryTripTap;
+  final VoidCallback? onViewAllScheduledTap;
 
   const SettingsList({
     super.key,
@@ -19,6 +20,7 @@ class SettingsList extends StatefulWidget {
     this.onScheduledTripDetailsTap,
     this.onSecurityTap,
     this.onHistoryTripTap,
+    this.onViewAllScheduledTap,
   });
 
   @override
@@ -27,6 +29,15 @@ class SettingsList extends StatefulWidget {
 
 class _SettingsListState extends State<SettingsList> {
   int? _expandedIndex;
+
+  bool get _hasPendingTrips => widget.scheduledTrips.isNotEmpty;
+
+  MockScheduledTrip? get _nextTrip {
+    if (widget.scheduledTrips.isEmpty) return null;
+    final sorted = [...widget.scheduledTrips]
+      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return sorted.first;
+  }
 
   void _onItemTap(int index) {
     if (index == 1) {
@@ -55,22 +66,25 @@ class _SettingsListState extends State<SettingsList> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SettingsItem(
-            icon: Icons.calendar_month_rounded,
-            iconBackgroundColor: AppColors.highlight,
-            label: 'Viagens Agendadas',
-            isExpanded: _expandedIndex == 0,
-            isExpandable: true,
-            onTap: () => _onItemTap(0),
-          ),
-          const _Divider(),
-          _buildExpandableContent(
-            isExpanded: _expandedIndex == 0,
-            child: _ScheduledTripsContent(
-              trips: widget.scheduledTrips,
-              onDetailsTap: widget.onScheduledTripDetailsTap,
+          if (_hasPendingTrips) ...[
+            _SettingsItem(
+              icon: Icons.calendar_month_rounded,
+              iconBackgroundColor: AppColors.highlight,
+              label: 'Viagens Agendadas',
+              isExpanded: _expandedIndex == 0,
+              isExpandable: true,
+              onTap: () => _onItemTap(0),
             ),
-          ),
+            const _Divider(),
+            _buildExpandableContent(
+              isExpanded: _expandedIndex == 0,
+              child: _SingleScheduledTripContent(
+                trip: _nextTrip!,
+                onDetailsTap: widget.onScheduledTripDetailsTap,
+                onViewAllTap: widget.onViewAllScheduledTap,
+              ),
+            ),
+          ],
           _SettingsItem(
             icon: Icons.shield_rounded,
             iconBackgroundColor: AppColors.highlight,
@@ -184,13 +198,15 @@ class _Divider extends StatelessWidget {
   }
 }
 
-class _ScheduledTripsContent extends StatelessWidget {
-  final List<MockScheduledTrip> trips;
+class _SingleScheduledTripContent extends StatelessWidget {
+  final MockScheduledTrip trip;
   final VoidCallback? onDetailsTap;
+  final VoidCallback? onViewAllTap;
 
-  const _ScheduledTripsContent({
-    required this.trips,
+  const _SingleScheduledTripContent({
+    required this.trip,
     this.onDetailsTap,
+    this.onViewAllTap,
   });
 
   @override
@@ -200,13 +216,32 @@ class _ScheduledTripsContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (int i = 0; i < trips.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
-            ScheduledTripWidget(
-              trip: trips[i],
-              onDetailsTap: onDetailsTap,
+          ScheduledTripWidget(
+            trip: trip,
+            onDetailsTap: onDetailsTap,
+            showMapPreview: true,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onViewAllTap,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Ver todas',
+                style: TextStyle(
+                  fontFamily: 'QuasimodoSemiBold',
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.secondary,
+                ),
+              ),
             ),
-          ],
+          ),
         ],
       ),
     );

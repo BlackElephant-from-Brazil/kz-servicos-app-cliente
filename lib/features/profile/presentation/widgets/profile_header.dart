@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
@@ -10,6 +12,8 @@ class ProfileHeader extends StatelessWidget {
   final bool hasNotifications;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
+  final VoidCallback? onEditPhotoTap;
+  final String? avatarPath;
 
   const ProfileHeader({
     super.key,
@@ -19,6 +23,8 @@ class ProfileHeader extends StatelessWidget {
     this.hasNotifications = false,
     this.onBackTap,
     this.onNotificationsTap,
+    this.onEditPhotoTap,
+    this.avatarPath,
   });
 
   String get _initials {
@@ -106,27 +112,69 @@ class ProfileHeader extends StatelessWidget {
     const double ringWidth = 3;
     const double totalSize = (avatarRadius + ringWidth) * 2;
 
-    return SizedBox(
-      width: totalSize,
-      height: totalSize,
-      child: CustomPaint(
-        painter: _ProgressRingPainter(progress: profileCompletion),
-        child: Center(
-          child: CircleAvatar(
-            radius: avatarRadius,
-            backgroundColor: AppColors.secondary,
-            child: Text(
-              _initials,
-              style: const TextStyle(
-                fontFamily: 'OutfitBlack',
-                fontSize: 24,
-                color: AppColors.white,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        SizedBox(
+          width: totalSize,
+          height: totalSize,
+          child: CustomPaint(
+            painter: _ProgressRingPainter(progress: profileCompletion),
+            child: Center(
+              child: CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: AppColors.secondary,
+                backgroundImage: _avatarImage,
+                child: _avatarImage == null
+                    ? Text(
+                        _initials,
+                        style: const TextStyle(
+                          fontFamily: 'OutfitBlack',
+                          fontSize: 24,
+                          color: AppColors.white,
+                        ),
+                      )
+                    : null,
               ),
             ),
           ),
         ),
-      ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: onEditPhotoTap,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.highlight,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x29000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.edit_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  ImageProvider? get _avatarImage {
+    if (avatarPath == null) return null;
+    if (kIsWeb) return NetworkImage(avatarPath!);
+    return FileImage(File(avatarPath!));
   }
 }
 
