@@ -1457,6 +1457,11 @@ class _TripHomePageState extends State<TripHomePage>
       child: TripBottomNav(
         selectedIndex: _selectedNavIndex,
         onItemSelected: (index) {
+          if (index == 2) {
+            context.go('/profile');
+          } else {
+            setState(() => _selectedNavIndex = index);
+          }
           if (index == 1) {
             context.go('/services');
             return;
