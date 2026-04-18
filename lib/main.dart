@@ -6,6 +6,7 @@ import 'package:kz_servicos_app/features/auth/data/datasources/auth_remote_datas
 import 'package:kz_servicos_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:kz_servicos_app/routes/app_router.dart';
 
 void main() async {
@@ -28,14 +29,23 @@ class KzServicosApp extends StatelessWidget {
     final dataSource = AuthRemoteDataSourceImpl(supabaseClient);
     final repository = AuthRepositoryImpl(dataSource);
     final signInWithEmail = SignInWithEmail(repository);
+    final authCubit = AuthCubit(
+      signInWithEmail: signInWithEmail,
+      repository: repository,
+    );
 
-    return BlocProvider(
-      create: (_) => AuthCubit(signInWithEmail: signInWithEmail),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: authCubit),
+        BlocProvider(
+          create: (_) => ProfileCubit(client: supabaseClient),
+        ),
+      ],
       child: MaterialApp.router(
         title: 'KZ Serviços',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        routerConfig: AppRouter.router,
+        routerConfig: AppRouter.createRouter(authCubit),
       ),
     );
   }

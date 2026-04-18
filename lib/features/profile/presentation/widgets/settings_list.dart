@@ -86,9 +86,9 @@ class _SettingsListState extends State<SettingsList> {
             ),
           ],
           _SettingsItem(
-            icon: Icons.shield_rounded,
+            icon: Icons.edit_rounded,
             iconBackgroundColor: AppColors.highlight,
-            label: 'Configurações de Segurança',
+            label: 'Edição de Perfil',
             isExpanded: false,
             isExpandable: false,
             onTap: () => _onItemTap(1),

@@ -22,6 +22,8 @@ class AuthRepositoryImpl implements AuthRepository {
       fullName: data['full_name'] as String,
       email: data['email'] as String,
       role: data['role'] as String,
+      phone: data['phone'] as String?,
+      avatarUrl: data['avatar_url'] as String?,
     );
   }
 

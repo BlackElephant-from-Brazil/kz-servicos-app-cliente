@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/auth/presentation/pages/login_page.dart';
 import 'package:kz_servicos_app/features/profile/presentation/pages/chat_page.dart';
 import 'package:kz_servicos_app/features/profile/presentation/pages/messages_page.dart';
@@ -13,10 +17,21 @@ import 'package:kz_servicos_app/features/other_services/presentation/pages/servi
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/trip_home_page.dart';
 
+const _publicRoutes = {'/splash', '/login'};
+
 abstract final class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
-    routes: [
+  static GoRouter createRouter(AuthCubit authCubit) {
+    return GoRouter(
+      initialLocation: '/splash',
+      refreshListenable: _AuthNotifier(authCubit),
+      redirect: (context, state) {
+        final isLoggedIn = authCubit.state is AuthSuccess;
+        final isPublic = _publicRoutes.contains(state.matchedLocation);
+
+        if (!isLoggedIn && !isPublic) return '/login';
+        return null;
+      },
+      routes: [
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashPage(),
@@ -74,5 +89,12 @@ abstract final class AppRouter {
         ),
       ),
     ],
-  );
+    );
+  }
+}
+
+class _AuthNotifier extends ChangeNotifier {
+  _AuthNotifier(AuthCubit cubit) {
+    cubit.stream.listen((_) => notifyListeners());
+  }
 }

@@ -36,8 +36,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
       case 0:
         context.go('/trip');
       case 2:
-        // Profile — not yet implemented
-        break;
+        context.go('/profile');
     }
   }
 
