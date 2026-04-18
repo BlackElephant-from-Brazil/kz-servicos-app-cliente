@@ -5,6 +5,7 @@ import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:kz_servicos_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
+import 'package:kz_servicos_app/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:kz_servicos_app/routes/app_router.dart';
@@ -29,8 +30,10 @@ class KzServicosApp extends StatelessWidget {
     final dataSource = AuthRemoteDataSourceImpl(supabaseClient);
     final repository = AuthRepositoryImpl(dataSource);
     final signInWithEmail = SignInWithEmail(repository);
+    final signUpWithEmail = SignUpWithEmail(repository);
     final authCubit = AuthCubit(
       signInWithEmail: signInWithEmail,
+      signUpWithEmail: signUpWithEmail,
       repository: repository,
     );
 
