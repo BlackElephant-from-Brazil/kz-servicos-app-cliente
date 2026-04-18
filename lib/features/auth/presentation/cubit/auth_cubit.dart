@@ -1,14 +1,20 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kz_servicos_app/features/auth/domain/entities/app_user.dart';
+import 'package:kz_servicos_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit({required SignInWithEmail signInWithEmail})
-      : _signInWithEmail = signInWithEmail,
+  AuthCubit({
+    required SignInWithEmail signInWithEmail,
+    required AuthRepository repository,
+  })  : _signInWithEmail = signInWithEmail,
+        _repository = repository,
         super(const AuthInitial());
 
   final SignInWithEmail _signInWithEmail;
+  final AuthRepository _repository;
 
   static final _emailRegex = RegExp(
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
@@ -53,5 +59,17 @@ class AuthCubit extends Cubit<AuthState> {
       return 'E-mail não confirmado. Verifique sua caixa de entrada.';
     }
     return 'Erro ao fazer login. Tente novamente.';
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _repository.signOut();
+    } finally {
+      emit(const AuthInitial());
+    }
+  }
+
+  void updateUser(AppUser user) {
+    emit(AuthSuccess(user));
   }
 }

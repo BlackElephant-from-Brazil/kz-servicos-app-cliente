@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
@@ -10,11 +11,17 @@ import 'package:kz_servicos_app/routes/app_router.dart';
 
 class MockSignInWithEmail extends Mock implements SignInWithEmail {}
 
+class MockAuthRepository extends Mock implements AuthRepository {}
+
 void main() {
   testWidgets('KzServicosApp renders without crashing',
       (WidgetTester tester) async {
     final mockSignIn = MockSignInWithEmail();
-    final authCubit = AuthCubit(signInWithEmail: mockSignIn);
+    final mockRepository = MockAuthRepository();
+    final authCubit = AuthCubit(
+      signInWithEmail: mockSignIn,
+      repository: mockRepository,
+    );
 
     await tester.pumpWidget(
       BlocProvider<AuthCubit>.value(
@@ -23,7 +30,7 @@ void main() {
           title: 'KZ Serviços',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          routerConfig: AppRouter.router,
+          routerConfig: AppRouter.createRouter(authCubit),
         ),
       ),
     );
