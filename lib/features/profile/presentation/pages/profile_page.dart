@@ -243,6 +243,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               context.push('/messages'),
                           onPaymentsTap: () =>
                               context.push('/wallet'),
+                          onServicesTap: () =>
+                              context.push('/services'),
                         );
                       },
                     );

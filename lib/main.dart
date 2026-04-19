@@ -7,6 +7,11 @@ import 'package:kz_servicos_app/features/auth/data/repositories/auth_repository_
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/other_services/data/repositories/service_category_repository_impl.dart';
+import 'package:kz_servicos_app/features/other_services/data/repositories/service_request_repository_impl.dart';
+import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_categories_cubit.dart';
+import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_request_cubit.dart';
+import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_requests_list_cubit.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/domain/usecases/create_trip.dart';
@@ -57,6 +62,23 @@ class KzServicosApp extends StatelessWidget {
         BlocProvider(
           create: (_) => ScheduledTripsCubit(
             repository: TripRepositoryImpl(client: supabaseClient),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => ServiceCategoriesCubit(
+            repository: ServiceCategoryRepositoryImpl(client: supabaseClient),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => ServiceRequestCubit(
+            repository: ServiceRequestRepositoryImpl(client: supabaseClient),
+            client: supabaseClient,
+          ),
+        ),
+        BlocProvider(
+          create: (_) => ServiceRequestsListCubit(
+            repository: ServiceRequestRepositoryImpl(client: supabaseClient),
+            client: supabaseClient,
           ),
         ),
       ],
