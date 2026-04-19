@@ -8,6 +8,10 @@ import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_up_with_email.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/domain/usecases/create_trip.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/routes/app_router.dart';
 
 void main() async {
@@ -42,6 +46,18 @@ class KzServicosApp extends StatelessWidget {
         BlocProvider.value(value: authCubit),
         BlocProvider(
           create: (_) => ProfileCubit(client: supabaseClient),
+        ),
+        BlocProvider(
+          create: (_) => TripCreationCubit(
+            createTrip: CreateTrip(
+              TripRepositoryImpl(client: supabaseClient),
+            ),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => ScheduledTripsCubit(
+            repository: TripRepositoryImpl(client: supabaseClient),
+          ),
         ),
       ],
       child: MaterialApp.router(
