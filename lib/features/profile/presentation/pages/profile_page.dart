@@ -5,13 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
 import 'package:kz_servicos_app/features/profile/data/models/mock_trip_history.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_state.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/profile_header.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/quick_actions_grid.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/settings_list.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -22,7 +23,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _scheduledTrips = MockScheduledTrip.samples;
   final _tripHistory = MockTripHistory.samples;
   final int _selectedNavIndex = 2;
   final ImagePicker _imagePicker = ImagePicker();
@@ -33,7 +33,9 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthSuccess) {
-      context.read<ProfileCubit>().loadStats(authState.user.id);
+      final userId = authState.user.id;
+      context.read<ProfileCubit>().loadStats(userId);
+      context.read<ScheduledTripsCubit>().load(userId);
     }
   }
 
@@ -222,13 +224,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     final stats = profileState is ProfileLoaded
                         ? profileState.stats
                         : null;
-                    return QuickActionsGrid(
-                      completedTrips: stats?.completedTrips ?? 0,
-                      requestedServices: stats?.requestedServices ?? 0,
-                      unreadMessages: stats?.unreadMessages ?? 0,
-                      onTripsTap: () => context.push('/trip-history'),
-                      onMessagesTap: () => context.push('/messages'),
-                      onPaymentsTap: () => context.push('/wallet'),
+                    return BlocBuilder<ScheduledTripsCubit,
+                        ScheduledTripsState>(
+                      builder: (context, tripsState) {
+                        final scheduledCount =
+                            tripsState is ScheduledTripsLoaded
+                                ? tripsState.trips.length
+                                : 0;
+                        return QuickActionsGrid(
+                          completedTrips: scheduledCount,
+                          completedTripsLabel: 'agendadas',
+                          requestedServices:
+                              stats?.requestedServices ?? 0,
+                          unreadMessages: stats?.unreadMessages ?? 0,
+                          onTripsTap: () =>
+                              context.push('/scheduled-trips'),
+                          onMessagesTap: () =>
+                              context.push('/messages'),
+                          onPaymentsTap: () =>
+                              context.push('/wallet'),
+                        );
+                      },
                     );
                   },
                 ),
@@ -247,15 +263,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      SettingsList(
-                        scheduledTrips: _scheduledTrips,
-                        tripHistory: _tripHistory,
-                        onSecurityTap: () =>
-                            context.push('/security-settings'),
-                        onViewAllScheduledTap: () =>
-                            context.push('/scheduled-trips'),
-                        onHistoryTripTap: () =>
-                            context.push('/trip-history'),
+                      BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+                        builder: (context, tripsState) {
+                          return SettingsList(
+                            scheduledTrips: tripsState is ScheduledTripsLoaded
+                                ? tripsState.trips
+                                : [],
+                            tripHistory: _tripHistory,
+                            onSecurityTap: () =>
+                                context.push('/security-settings'),
+                            onViewAllScheduledTap: () =>
+                                context.push('/scheduled-trips'),
+                            onHistoryTripTap: () =>
+                                context.push('/trip-history'),
+                          );
+                        },
                       ),
                     ],
                   ),

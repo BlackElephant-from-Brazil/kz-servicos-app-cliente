@@ -5,15 +5,25 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/constants/map_styles.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
 import 'package:kz_servicos_app/features/trip/data/services/directions_service.dart';
+import 'package:kz_servicos_app/features/trip/data/services/geocoding_address_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/place_details_service.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_state.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/address_search_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_details_panel.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
@@ -21,6 +31,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confir
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
@@ -53,6 +64,8 @@ class _TripHomePageState extends State<TripHomePage>
   final Completer<GoogleMapController> _mapController = Completer();
   final DirectionsService _directionsService = DirectionsService();
   final GeocodingService _geocodingService = GeocodingService();
+  final GeocodingAddressService _geocodingAddressService =
+      GeocodingAddressService();
   final PlaceDetailsService _placeDetailsService = PlaceDetailsService();
 
   GoogleMapController? _controller;
@@ -81,6 +94,10 @@ class _TripHomePageState extends State<TripHomePage>
   bool _panelMinimized = false;
   List<LatLng> _stops = [];
 
+  // Place IDs from address selection
+  String? _pickupPlaceId;
+  String? _destinationPlaceId;
+
   // Driver flow state
   MockDriver? _selectedDriver;
   Timer? _searchingTimer;
@@ -94,6 +111,7 @@ class _TripHomePageState extends State<TripHomePage>
   String? _pickupAddress;
   String? _destinationAddress;
   BitmapDescriptor? _cachedBlueDotIcon;
+  bool _isCreatingTrip = false;
 
   @override
   void initState() {
@@ -102,6 +120,14 @@ class _TripHomePageState extends State<TripHomePage>
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
     );
     _requestLocationAndInit();
+    _loadScheduledTrips();
+  }
+
+  void _loadScheduledTrips() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthSuccess) {
+      context.read<ScheduledTripsCubit>().load(authState.user.id);
+    }
   }
 
   void _openSearch() {
@@ -159,6 +185,7 @@ class _TripHomePageState extends State<TripHomePage>
   // ──── Address selection ────
 
   Future<void> _onDestinationSelected(PlacePrediction prediction) async {
+    _destinationPlaceId = prediction.placeId;
     final latLng = await _placeDetailsService.getPlaceLatLng(
       prediction.placeId,
     );
@@ -188,6 +215,7 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _onPickupSelected(PlacePrediction prediction) async {
+    _pickupPlaceId = prediction.placeId;
     LatLng? latLng;
     if (prediction.placeId == '_current_location_' &&
         _currentLocation != null) {
@@ -673,12 +701,80 @@ class _TripHomePageState extends State<TripHomePage>
     );
   }
 
-  void _onPassengerDetailsConfirmed() {
-    setState(() => _step = TripFlowStep.searchingDriver);
-    _searchingTimer = Timer(
-      const Duration(seconds: 10),
-      _onSearchingComplete,
-    );
+  Future<void> _onPassengerDetailsConfirmed(PassengerFormData formData) async {
+    if (_pickupLatLng == null || _destinationLatLng == null) return;
+    if (_isCreatingTrip) return;
+
+    // Get current user ID before async gaps
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final userId = authState.user.id;
+    final tripCubit = context.read<TripCreationCubit>();
+
+    setState(() {
+      _isCreatingTrip = true;
+      _step = TripFlowStep.searchingDriver;
+    });
+
+    try {
+      // Resolve structured addresses
+      final pickupAddress = _pickupPlaceId != null &&
+              _pickupPlaceId != '_current_location_'
+          ? await _geocodingAddressService
+              .getAddressFromPlaceId(_pickupPlaceId!)
+          : await _geocodingAddressService
+              .reverseGeocodeToAddress(_pickupLatLng!);
+
+      final dropoffAddress = _destinationPlaceId != null
+          ? await _geocodingAddressService
+              .getAddressFromPlaceId(_destinationPlaceId!)
+          : await _geocodingAddressService
+              .reverseGeocodeToAddress(_destinationLatLng!);
+
+      if (pickupAddress == null || dropoffAddress == null) {
+        throw Exception('Could not resolve addresses');
+      }
+
+      // Build trip request
+      final tripRequest = TripRequest(
+        clientId: userId,
+        pickupAddress: pickupAddress,
+        dropoffAddress: dropoffAddress,
+        scheduledDatetime: formData.scheduledDatetime,
+        passengerCount: formData.adults,
+        childrenDescription: formData.childrenDescription,
+        luggageDescription: formData.luggageDescription,
+        observations: formData.observations,
+        paymentMethod: 'pix',
+      );
+
+      // Submit via cubit
+      if (!mounted) return;
+      await tripCubit.submit(tripRequest);
+    } catch (e) {
+      debugPrint('[KZ] Trip creation error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao criar viagem. Tente novamente.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _step = TripFlowStep.passengerDetails);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingTrip = false);
+      }
+    }
   }
 
   void _onDetailsBack() {
@@ -703,8 +799,12 @@ class _TripHomePageState extends State<TripHomePage>
       _driverEtaMinutes = 0;
       _pickupAddress = null;
       _destinationAddress = null;
+      _pickupPlaceId = null;
+      _destinationPlaceId = null;
+      _isCreatingTrip = false;
       _isSearchActive = true;
     });
+    context.read<TripCreationCubit>().reset();
   }
 
   void _onSearchingComplete() {
@@ -905,7 +1005,11 @@ class _TripHomePageState extends State<TripHomePage>
       _driverEtaMinutes = 0;
       _pickupAddress = null;
       _destinationAddress = null;
+      _pickupPlaceId = null;
+      _destinationPlaceId = null;
+      _isCreatingTrip = false;
     });
+    context.read<TripCreationCubit>().reset();
   }
 
   Future<void> _fitDriverBounds(LatLng driverPos) async {
@@ -930,7 +1034,33 @@ class _TripHomePageState extends State<TripHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<TripCreationCubit, TripCreationState>(
+      listener: (context, state) {
+        if (state is TripCreationSuccess) {
+          debugPrint('[KZ] Trip created: ${state.tripId}');
+          _loadScheduledTrips();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Viagem criada com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Continue the flow — searching for drivers
+          _searchingTimer = Timer(
+            const Duration(seconds: 10),
+            _onSearchingComplete,
+          );
+        } else if (state is TripCreationError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _step = TripFlowStep.passengerDetails);
+        }
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
@@ -938,6 +1068,7 @@ class _TripHomePageState extends State<TripHomePage>
           if (_step == TripFlowStep.idle && !_isSearchActive)
             _buildNotificationButton(),
           _buildFakeSearchBar(),
+          _buildScheduledTripsList(),
           _buildBottomNav(),
           _buildMapTapOverlay(),
           if (!_isSearchActive) _buildBottomPanel(),
@@ -950,6 +1081,7 @@ class _TripHomePageState extends State<TripHomePage>
           _buildSearchOverlay(),
         ],
       ),
+    ),
     );
   }
 
@@ -1240,7 +1372,14 @@ class _TripHomePageState extends State<TripHomePage>
       bottom: show ? 148 : -80,
       left: 20,
       right: 20,
-      child: GestureDetector(
+      child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+        builder: (context, state) {
+          final hasTrips =
+              state is ScheduledTripsLoaded && state.trips.isNotEmpty;
+          return AnimatedPadding(
+            duration: const Duration(milliseconds: 350),
+            padding: EdgeInsets.only(bottom: hasTrips ? 100 : 0),
+            child: GestureDetector(
         onTap: _openSearch,
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -1272,6 +1411,9 @@ class _TripHomePageState extends State<TripHomePage>
             ],
           ),
         ),
+      ),
+          );
+        },
       ),
     );
   }
@@ -1310,6 +1452,39 @@ class _TripHomePageState extends State<TripHomePage>
                 )
               : const SizedBox.shrink(key: ValueKey('no_search')),
         ),
+      ),
+    );
+  }
+
+  Widget _buildScheduledTripsList() {
+    final show = _step == TripFlowStep.idle && !_isSearchActive;
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      bottom: show ? 104 : -120,
+      left: 0,
+      right: 0,
+      child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+        builder: (context, state) {
+          if (state is! ScheduledTripsLoaded || state.trips.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return SizedBox(
+            height: 90,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: state.trips.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                return ScheduledTripCard(
+                  trip: state.trips[index],
+                  onTap: () => context.go('/scheduled-trips'),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
