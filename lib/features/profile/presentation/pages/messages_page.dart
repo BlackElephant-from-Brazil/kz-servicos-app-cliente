@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_message.dart';
+import 'package:kz_servicos_app/features/chat/domain/entities/chat_message.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/messages_cubit.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/messages_state.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 
 class MessagesPage extends StatelessWidget {
   const MessagesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final conversations = MockConversation.samples;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -18,9 +20,30 @@ class MessagesPage extends StatelessWidget {
           _buildHeader(context),
           const SizedBox(height: 16),
           Expanded(
-            child: conversations.isEmpty
-                ? _buildEmptyState()
-                : _buildConversationsList(context, conversations),
+            child: BlocBuilder<MessagesCubit, MessagesState>(
+              builder: (context, state) {
+                if (state is MessagesLoading || state is MessagesInitial) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is MessagesError) {
+                  return Center(
+                    child: Text(
+                      'Erro ao carregar mensagens',
+                      style: TextStyle(
+                        fontFamily: 'QuasimodoSemiBold',
+                        fontSize: 16,
+                        color: Colors.red.shade400,
+                      ),
+                    ),
+                  );
+                }
+                if (state is MessagesLoaded) {
+                  if (state.trips.isEmpty) return _buildEmptyState();
+                  return _buildList(context, state);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ],
       ),
@@ -80,19 +103,23 @@ class MessagesPage extends StatelessWidget {
     );
   }
 
-  Widget _buildConversationsList(
-    BuildContext context,
-    List<MockConversation> conversations,
-  ) {
+  Widget _buildList(BuildContext context, MessagesLoaded state) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: conversations.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemCount: state.trips.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final conv = conversations[index];
+        final trip = state.trips[index];
+        final room = state.rooms[trip.id];
+        final lastMsg =
+            room != null ? state.lastMessages[room.id] : null;
+        final unread =
+            room != null ? (state.unreadCounts[room.id] ?? 0) : 0;
         return _ConversationTile(
-          conversation: conv,
-          onTap: () => context.push('/chat/${conv.id}'),
+          trip: trip,
+          lastMessage: lastMsg,
+          unreadCount: unread,
+          onTap: () => context.push('/chat/${trip.id}', extra: trip),
         );
       },
     );
@@ -100,27 +127,32 @@ class MessagesPage extends StatelessWidget {
 }
 
 class _ConversationTile extends StatelessWidget {
-  final MockConversation conversation;
-  final VoidCallback onTap;
-
   const _ConversationTile({
-    required this.conversation,
+    required this.trip,
     required this.onTap,
+    this.lastMessage,
+    this.unreadCount = 0,
   });
 
-  String get _lastMessagePreview {
-    if (conversation.messages.isEmpty) return '';
-    final msg = conversation.messages.last;
-    return msg.isFromUser ? 'Você: ${msg.text}' : msg.text;
+  final ScheduledTrip trip;
+  final ChatMessage? lastMessage;
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  String get _preview {
+    if (lastMessage == null) return '';
+    return lastMessage!.isFromCurrentUser
+        ? 'Você: ${lastMessage!.message}'
+        : lastMessage!.message;
   }
 
   String get _timeLabel {
-    final now = DateTime(2026, 4, 15, 12, 0);
-    final diff = now.difference(conversation.lastMessageAt);
+    if (lastMessage == null) return '';
+    final diff = DateTime.now().difference(lastMessage!.createdAt);
     if (diff.inMinutes < 60) return '${diff.inMinutes}min';
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${conversation.lastMessageAt.day}/${conversation.lastMessageAt.month}';
+    return '${lastMessage!.createdAt.day}/${lastMessage!.createdAt.month}';
   }
 
   @override
@@ -172,19 +204,20 @@ class _ConversationTile extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Text(
-                        _timeLabel,
-                        style: const TextStyle(
-                          fontFamily: 'QuasimodoSemiBold',
-                          fontSize: 11,
-                          color: Color(0xFF999999),
+                      if (_timeLabel.isNotEmpty)
+                        Text(
+                          _timeLabel,
+                          style: const TextStyle(
+                            fontFamily: 'QuasimodoSemiBold',
+                            fontSize: 11,
+                            color: Color(0xFF999999),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${conversation.origin} → ${conversation.destination}',
+                    '${trip.origin} → ${trip.destination}',
                     style: const TextStyle(
                       fontFamily: 'QuasimodoSemiBold',
                       fontSize: 12,
@@ -198,11 +231,11 @@ class _ConversationTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _lastMessagePreview,
+                          _preview,
                           style: TextStyle(
                             fontFamily: 'QuasimodoSemiBold',
                             fontSize: 12,
-                            color: conversation.unreadCount > 0
+                            color: unreadCount > 0
                                 ? AppColors.textPrimary
                                 : const Color(0xFF999999),
                           ),
@@ -210,7 +243,7 @@ class _ConversationTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (conversation.unreadCount > 0)
+                      if (unreadCount > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -221,7 +254,7 @@ class _ConversationTile extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Text(
-                            '${conversation.unreadCount}',
+                            '$unreadCount',
                             style: const TextStyle(
                               fontFamily: 'OutfitBlack',
                               fontSize: 10,
