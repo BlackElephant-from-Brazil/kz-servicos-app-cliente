@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_message.dart';
+import 'package:kz_servicos_app/features/chat/domain/entities/chat_message.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/chat_cubit.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/chat_state.dart';
 
 class ChatPage extends StatefulWidget {
-  final String conversationId;
-
-  const ChatPage({super.key, required this.conversationId});
+  const ChatPage({super.key});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -15,8 +16,6 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late final MockConversation _conversation;
-  late final List<MockChatMessage> _messages;
 
   static const _presetMessages = [
     'Estou chegando',
@@ -24,16 +23,6 @@ class _ChatPageState extends State<ChatPage> {
     'Pode confirmar o endereço?',
     'Obrigado(a)!',
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _conversation = MockConversation.samples.firstWhere(
-      (c) => c.id == widget.conversationId,
-      orElse: () => MockConversation.samples.first,
-    );
-    _messages = List.from(_conversation.messages);
-  }
 
   @override
   void dispose() {
@@ -44,14 +33,7 @@ class _ChatPageState extends State<ChatPage> {
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
-    setState(() {
-      _messages.add(MockChatMessage(
-        id: 'msg_new_${_messages.length}',
-        text: text.trim(),
-        isFromUser: true,
-        sentAt: DateTime.now(),
-      ));
-    });
+    context.read<ChatCubit>().sendMessage(text);
     _messageController.clear();
     _scrollToBottom();
   }
@@ -72,19 +54,49 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 8),
-          _buildHeader(context),
-          Expanded(child: _buildMessagesList()),
-          _buildPresetBar(),
-          _buildInputBar(context),
-        ],
+      body: BlocConsumer<ChatCubit, ChatState>(
+        listener: (context, state) {
+          if (state is ChatLoaded) _scrollToBottom();
+        },
+        builder: (context, state) {
+          if (state is ChatLoading || state is ChatInitial) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is ChatError) {
+            return Center(
+              child: Text(
+                'Erro ao carregar chat: ${state.message}',
+                style: TextStyle(
+                  fontFamily: 'QuasimodoSemiBold',
+                  fontSize: 14,
+                  color: Colors.red.shade400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+          if (state is ChatLoaded) {
+            return Column(
+              children: [
+                SizedBox(height: MediaQuery.of(context).padding.top + 8),
+                _buildHeader(context, state),
+                Expanded(child: _buildMessagesList(state.messages)),
+                _buildPresetBar(),
+                _buildInputBar(context, state.isSending),
+              ],
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, ChatLoaded state) {
+    final subtitle = (state.tripOrigin != null && state.tripDestination != null)
+        ? '${state.tripOrigin} → ${state.tripDestination}'
+        : null;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: const BoxDecoration(
@@ -134,16 +146,17 @@ class _ChatPageState extends State<ChatPage> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
-                  '${_conversation.origin} → ${_conversation.destination}',
-                  style: const TextStyle(
-                    fontFamily: 'QuasimodoSemiBold',
-                    fontSize: 11,
-                    color: Color(0xFF999999),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontFamily: 'QuasimodoSemiBold',
+                      fontSize: 11,
+                      color: Color(0xFF999999),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
             ),
           ),
@@ -152,14 +165,13 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessagesList() {
+  Widget _buildMessagesList(List<ChatMessage> messages) {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: _messages.length,
+      itemCount: messages.length,
       itemBuilder: (context, index) {
-        final msg = _messages[index];
-        return _MessageBubble(message: msg);
+        return _MessageBubble(message: messages[index]);
       },
     );
   }
@@ -171,7 +183,7 @@ class _ChatPageState extends State<ChatPage> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _presetMessages.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () => _sendMessage(_presetMessages[index]),
@@ -200,7 +212,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildInputBar(BuildContext context) {
+  Widget _buildInputBar(BuildContext context, bool isSending) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -229,6 +241,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
               child: TextField(
                 controller: _messageController,
+                enabled: !isSending,
                 decoration: const InputDecoration(
                   hintText: 'Digite uma mensagem...',
                   hintStyle: TextStyle(
@@ -250,19 +263,29 @@ class _ChatPageState extends State<ChatPage> {
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => _sendMessage(_messageController.text),
+            onTap: isSending ? null : () => _sendMessage(_messageController.text),
             child: Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.secondary,
+              decoration: BoxDecoration(
+                color: isSending
+                    ? AppColors.secondary.withValues(alpha: 0.5)
+                    : AppColors.secondary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: isSending
+                  ? const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
             ),
           ),
         ],
@@ -272,15 +295,15 @@ class _ChatPageState extends State<ChatPage> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  final MockChatMessage message;
-
   const _MessageBubble({required this.message});
+
+  final ChatMessage message;
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.isFromUser;
-    final hour = message.sentAt.hour.toString().padLeft(2, '0');
-    final minute = message.sentAt.minute.toString().padLeft(2, '0');
+    final isUser = message.isFromCurrentUser;
+    final hour = message.createdAt.hour.toString().padLeft(2, '0');
+    final minute = message.createdAt.minute.toString().padLeft(2, '0');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -331,7 +354,7 @@ class _MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    message.text,
+                    message.message,
                     style: TextStyle(
                       fontFamily: 'QuasimodoSemiBold',
                       fontSize: 13,
@@ -353,6 +376,7 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
           ),
+          if (isUser) const SizedBox(width: 8),
         ],
       ),
     );
