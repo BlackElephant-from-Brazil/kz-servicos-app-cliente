@@ -20,6 +20,7 @@ void main() {
       expect(model.clientId, 'client-1');
       expect(model.providerId, 'driver-user-1');
       expect(model.isActive, true);
+      expect(model.createdAt, DateTime.utc(2026, 5, 1, 10, 0, 0));
     });
 
     test('toEntity maps fields correctly', () {
@@ -43,9 +44,11 @@ void main() {
     test('fromJson parses all fields', () {
       final model = ChatMessageModel.fromJson(json);
       expect(model.id, 'msg-1');
+      expect(model.chatRoomId, 'room-1');
       expect(model.senderId, 'client-1');
       expect(model.message, 'Olá!');
       expect(model.isRead, false);
+      expect(model.createdAt, DateTime.utc(2026, 5, 1, 10, 5, 0));
     });
 
     test('toEntity sets isFromCurrentUser true when senderId matches', () {
