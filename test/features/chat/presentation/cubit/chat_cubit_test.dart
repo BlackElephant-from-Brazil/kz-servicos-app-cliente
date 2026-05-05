@@ -57,8 +57,10 @@ void main() {
         .thenAnswer((_) => realtimeController.stream);
   }
 
-  test('initial state is ChatInitial', () {
-    expect(buildCubit().state, isA<ChatInitial>());
+  test('initial state is ChatInitial', () async {
+    final cubit = buildCubit();
+    expect(cubit.state, isA<ChatInitial>());
+    await cubit.close();
   });
 
   blocTest<ChatCubit, ChatState>(

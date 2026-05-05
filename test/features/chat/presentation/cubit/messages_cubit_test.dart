@@ -1,7 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:kz_servicos_app/features/chat/domain/entities/chat_message.dart';
 import 'package:kz_servicos_app/features/chat/domain/entities/chat_room.dart';
 import 'package:kz_servicos_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:kz_servicos_app/features/chat/presentation/cubit/messages_cubit.dart';

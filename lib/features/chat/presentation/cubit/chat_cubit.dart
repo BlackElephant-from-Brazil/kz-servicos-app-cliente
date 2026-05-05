@@ -88,9 +88,13 @@ class ChatCubit extends Cubit<ChatState> {
         senderId: _currentUserId,
         text: trimmed,
       );
-      // Realtime entregará a mensagem confirmada, substituindo a otimista
+      // Remove the optimistic message — Realtime will deliver the confirmed one
       if (state is ChatLoaded) {
-        emit((state as ChatLoaded).copyWith(isSending: false));
+        final loaded = state as ChatLoaded;
+        emit(loaded.copyWith(
+          messages: loaded.messages.where((m) => m.id != optimisticId).toList(),
+          isSending: false,
+        ));
       }
     } on Exception {
       if (state is ChatLoaded) {
