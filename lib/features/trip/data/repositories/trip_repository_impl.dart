@@ -102,7 +102,7 @@ class TripRepositoryImpl implements TripRepository {
           '*, '
           'pickup_address:addresses!pickup_address_id(*), '
           'dropoff_address:addresses!dropoff_address_id(*), '
-          'driver_profiles(provider_profiles(users(full_name)))',
+          'driver_profiles(provider_profiles(users(full_name, avatar_url)), vehicles(brand, model, year, color, license_plate, is_active))',
         )
         .eq('client_id', clientId)
         .inFilter('status', _activeStatuses)
@@ -203,7 +203,7 @@ class TripRepositoryImpl implements TripRepository {
           '*, '
           'pickup_address:addresses!pickup_address_id(*), '
           'dropoff_address:addresses!dropoff_address_id(*), '
-          'driver_profiles(provider_profiles(users(full_name)))',
+          'driver_profiles(provider_profiles(users(full_name, avatar_url)), vehicles(brand, model, year, color, license_plate, is_active))',
         )
         .eq('client_id', clientId)
         .inFilter('status', _chatEligibleStatuses)

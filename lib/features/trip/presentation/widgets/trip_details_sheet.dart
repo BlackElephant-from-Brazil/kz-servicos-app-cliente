@@ -160,15 +160,6 @@ class TripDetailsSheet extends StatelessWidget {
                     label:
                         '${trip.passengerCount} passageiro${trip.passengerCount > 1 ? 's' : ''}',
                   ),
-                  if (trip.driverName != null) ...[
-                    const SizedBox(height: 8),
-                    _InfoRow(
-                      icon: Icons.person_rounded,
-                      iconColor:
-                          AppColors.textPrimary.withValues(alpha: 0.6),
-                      label: trip.driverName!,
-                    ),
-                  ],
                   if (trip.observations != null &&
                       trip.observations!.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -183,7 +174,15 @@ class TripDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
-          if (['scheduled', 'started', 'finished'].contains(trip.status)) ...[
+          if (trip.driverName != null) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _DriverCard(trip: trip),
+            ),
+          ],
+          if (['scheduled', 'started', 'finished'].contains(trip.status) &&
+              trip.driverName != null) ...[
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -253,6 +252,109 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DriverCard extends StatelessWidget {
+  const _DriverCard({required this.trip});
+
+  final ScheduledTrip trip;
+
+  String get _vehicleSummary {
+    final parts = <String>[
+      if (trip.vehicleBrand != null) trip.vehicleBrand!,
+      if (trip.vehicleModel != null) trip.vehicleModel!,
+      if (trip.vehicleYear != null) trip.vehicleYear!.toString(),
+    ];
+    return parts.join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: const Color(0xFFE0E0E0),
+            backgroundImage: trip.driverAvatarUrl != null
+                ? NetworkImage(trip.driverAvatarUrl!)
+                : null,
+            child: trip.driverAvatarUrl == null
+                ? const Icon(
+                    Icons.person_rounded,
+                    size: 26,
+                    color: Color(0xFF9E9E9E),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  trip.driverName!,
+                  style: const TextStyle(
+                    fontFamily: 'OutfitBlack',
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (_vehicleSummary.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _vehicleSummary,
+                    style: TextStyle(
+                      fontFamily: 'QuasimodoSemiBold',
+                      fontSize: 12,
+                      color: AppColors.textPrimary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+                if (trip.vehiclePlate != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.directions_car_rounded,
+                        size: 12,
+                        color: AppColors.textPrimary.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        trip.vehiclePlate!,
+                        style: TextStyle(
+                          fontFamily: 'QuasimodoSemiBold',
+                          fontSize: 12,
+                          color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      if (trip.vehicleColor != null) ...[
+                        Text(
+                          ' • ${trip.vehicleColor!}',
+                          style: TextStyle(
+                            fontFamily: 'QuasimodoSemiBold',
+                            fontSize: 12,
+                            color:
+                                AppColors.textPrimary.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

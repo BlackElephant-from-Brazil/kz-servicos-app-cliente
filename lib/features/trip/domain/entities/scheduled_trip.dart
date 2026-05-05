@@ -14,6 +14,12 @@ class ScheduledTrip extends Equatable {
     required this.destinationLng,
     required this.passengerCount,
     this.driverName,
+    this.driverAvatarUrl,
+    this.vehicleBrand,
+    this.vehicleModel,
+    this.vehicleYear,
+    this.vehicleColor,
+    this.vehiclePlate,
     this.observations,
   });
 
@@ -28,6 +34,12 @@ class ScheduledTrip extends Equatable {
   final double destinationLng;
   final int passengerCount;
   final String? driverName;
+  final String? driverAvatarUrl;
+  final String? vehicleBrand;
+  final String? vehicleModel;
+  final int? vehicleYear;
+  final String? vehicleColor;
+  final String? vehiclePlate;
   final String? observations;
 
   @override

@@ -151,12 +151,45 @@ class ScheduledTripCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (trip.driverName != null) ...[
+              const SizedBox(height: 8),
+              _buildDriverRow(mutedColor),
+            ],
             const Spacer(),
             // Navigation row (always rendered to keep height stable)
             _buildNavRow(mutedColor, hasMultiple),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDriverRow(Color mutedColor) {
+    final parts = <String>[trip.driverName!];
+    final vehicle = [
+      if (trip.vehicleBrand != null) trip.vehicleBrand!,
+      if (trip.vehicleModel != null) trip.vehicleModel!,
+    ].join(' ');
+    if (vehicle.isNotEmpty) parts.add('• $vehicle');
+    if (trip.vehiclePlate != null) parts.add('• ${trip.vehiclePlate!}');
+
+    return Row(
+      children: [
+        Icon(Icons.person_rounded, size: 12, color: mutedColor),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            parts.join(' '),
+            style: TextStyle(
+              fontFamily: 'QuasimodoSemiBold',
+              fontSize: 11,
+              color: mutedColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

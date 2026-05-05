@@ -13,6 +13,12 @@ class ScheduledTripModel {
     required this.destinationLng,
     required this.passengerCount,
     this.driverName,
+    this.driverAvatarUrl,
+    this.vehicleBrand,
+    this.vehicleModel,
+    this.vehicleYear,
+    this.vehicleColor,
+    this.vehiclePlate,
     this.observations,
   });
 
@@ -27,6 +33,12 @@ class ScheduledTripModel {
   final double destinationLng;
   final int passengerCount;
   final String? driverName;
+  final String? driverAvatarUrl;
+  final String? vehicleBrand;
+  final String? vehicleModel;
+  final int? vehicleYear;
+  final String? vehicleColor;
+  final String? vehiclePlate;
   final String? observations;
 
   factory ScheduledTripModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +51,16 @@ class ScheduledTripModel {
         driverProfile?['provider_profiles'] as Map<String, dynamic>?;
     final driverUser =
         providerProfile?['users'] as Map<String, dynamic>?;
+
+    final vehicles = driverProfile?['vehicles'] as List<dynamic>?;
+    Map<String, dynamic>? vehicle;
+    if (vehicles != null && vehicles.isNotEmpty) {
+      final casted = vehicles.cast<Map<String, dynamic>>();
+      vehicle = casted.firstWhere(
+        (v) => v['is_active'] == true,
+        orElse: () => casted.first,
+      );
+    }
 
     return ScheduledTripModel(
       id: json['id'] as String,
@@ -53,6 +75,12 @@ class ScheduledTripModel {
       destinationLng: _toDouble(dropoff?['longitude']),
       passengerCount: json['passenger_count'] as int? ?? 1,
       driverName: driverUser?['full_name'] as String?,
+      driverAvatarUrl: driverUser?['avatar_url'] as String?,
+      vehicleBrand: vehicle?['brand'] as String?,
+      vehicleModel: vehicle?['model'] as String?,
+      vehicleYear: vehicle?['year'] as int?,
+      vehicleColor: vehicle?['color'] as String?,
+      vehiclePlate: vehicle?['license_plate'] as String?,
       observations: json['observations'] as String?,
     );
   }
@@ -95,6 +123,12 @@ class ScheduledTripModel {
         destinationLng: destinationLng,
         passengerCount: passengerCount,
         driverName: driverName,
+        driverAvatarUrl: driverAvatarUrl,
+        vehicleBrand: vehicleBrand,
+        vehicleModel: vehicleModel,
+        vehicleYear: vehicleYear,
+        vehicleColor: vehicleColor,
+        vehiclePlate: vehiclePlate,
         observations: observations,
       );
 }
