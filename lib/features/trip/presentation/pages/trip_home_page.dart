@@ -1559,7 +1559,7 @@ class _TripHomePageState extends State<TripHomePage>
                 if (v < 0) { _goToNextTrip(total); } else { _goToPrevTrip(total); }
               },
               child: SizedBox(
-                height: 185,
+                height: trip.driverName != null ? 210 : 185,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: ScheduledTripCard(
