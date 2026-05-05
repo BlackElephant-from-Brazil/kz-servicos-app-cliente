@@ -70,7 +70,7 @@ abstract final class AppRouter {
         path: '/messages',
         builder: (context, state) {
           final client = Supabase.instance.client;
-          final clientId = client.auth.currentUser!.id;
+          final clientId = client.auth.currentUser?.id ?? '';
           return BlocProvider(
             create: (_) => MessagesCubit(
               tripRepository: TripRepositoryImpl(client: client),
@@ -90,7 +90,7 @@ abstract final class AppRouter {
           return BlocProvider(
             create: (_) => ChatCubit(
               chatRepository: ChatRepositoryImpl(client: client),
-              currentUserId: client.auth.currentUser!.id,
+              currentUserId: client.auth.currentUser?.id ?? '',
             )..init(
                 tripId,
                 tripOrigin: trip?.origin,
