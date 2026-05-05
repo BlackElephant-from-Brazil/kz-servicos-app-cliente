@@ -1,5 +1,5 @@
-import '../entities/chat_message.dart';
-import '../entities/chat_room.dart';
+import 'package:kz_servicos_app/features/chat/domain/entities/chat_message.dart';
+import 'package:kz_servicos_app/features/chat/domain/entities/chat_room.dart';
 
 abstract class ChatRepository {
   /// Retorna a sala existente para o trip, ou cria uma nova.
@@ -22,11 +22,11 @@ abstract class ChatRepository {
   /// Marca como lidas todas as mensagens de outros remetentes.
   Future<void> markAllAsRead(String chatRoomId, String userId);
 
-  /// Retorna salas para múltiplos trips (Map&lt;tripId, ChatRoom?&gt;).
+  /// Retorna salas para múltiplos trips (`Map<tripId, ChatRoom?>`).
   /// trips sem sala mapeiam para null.
   Future<Map<String, ChatRoom?>> getRoomsForTrips(List<String> tripIds);
 
-  /// Última mensagem por sala (Map&lt;roomId, ChatMessage?&gt;).
+  /// Última mensagem por sala (`Map<roomId, ChatMessage?>`).
   Future<Map<String, ChatMessage?>> getLastMessages(List<String> roomIds);
 
   /// Contagem de não-lidos por sala para o usuário atual.
