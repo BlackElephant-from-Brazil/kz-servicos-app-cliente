@@ -12,7 +12,11 @@ class ChatRepositoryImpl implements ChatRepository {
 
   final SupabaseClient _client;
 
-  String get _currentUserId => _client.auth.currentUser!.id;
+  String get _currentUserId {
+    final id = _client.auth.currentUser?.id;
+    if (id == null) throw Exception('No authenticated user.');
+    return id;
+  }
 
   @override
   Future<ChatRoom> getOrCreateRoomForTrip(String tripId) async {
@@ -90,7 +94,7 @@ class ChatRepositoryImpl implements ChatRepository {
         .select()
         .single();
 
-    return ChatMessageModel.fromJson(inserted).toEntity(_currentUserId);
+    return ChatMessageModel.fromJson(inserted).toEntity(senderId);
   }
 
   @override
@@ -122,7 +126,11 @@ class ChatRepositoryImpl implements ChatRepository {
             }
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          if (error != null && !controller.isClosed) {
+            controller.addError(error);
+          }
+        });
 
     return controller.stream;
   }
@@ -131,10 +139,7 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<void> markAllAsRead(String chatRoomId, String userId) async {
     await _client
         .from('chat_messages')
-        .update({
-          'is_read': true,
-          'read_at': DateTime.now().toIso8601String(),
-        })
+        .update({'is_read': true})
         .eq('chat_room_id', chatRoomId)
         .eq('is_read', false)
         .neq('sender_id', userId);
@@ -169,7 +174,8 @@ class ChatRepositoryImpl implements ChatRepository {
         .from('chat_messages')
         .select()
         .inFilter('chat_room_id', roomIds)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(roomIds.length);
 
     final result = <String, ChatMessage?>{for (final id in roomIds) id: null};
     for (final json in response) {
