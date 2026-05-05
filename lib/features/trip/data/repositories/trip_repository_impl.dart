@@ -192,4 +192,25 @@ class TripRepositoryImpl implements TripRepository {
         .delete()
         .eq('trip_id', tripId);
   }
+
+  static const _chatEligibleStatuses = ['scheduled', 'started', 'finished'];
+
+  @override
+  Future<List<ScheduledTrip>> getChatEligibleTrips(String clientId) async {
+    final response = await _client
+        .from('trips')
+        .select(
+          '*, '
+          'pickup_address:addresses!pickup_address_id(*), '
+          'dropoff_address:addresses!dropoff_address_id(*), '
+          'driver_profiles(provider_profiles(users(full_name)))',
+        )
+        .eq('client_id', clientId)
+        .inFilter('status', _chatEligibleStatuses)
+        .order('scheduled_datetime', ascending: false);
+
+    return response
+        .map((json) => ScheduledTripModel.fromJson(json).toEntity())
+        .toList();
+  }
 }
