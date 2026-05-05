@@ -19,6 +19,13 @@ import 'package:kz_servicos_app/features/other_services/presentation/pages/categ
 import 'package:kz_servicos_app/features/other_services/presentation/pages/services_home_page.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/trip_home_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kz_servicos_app/features/chat/data/repositories/chat_repository_impl.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/chat_cubit.dart';
+import 'package:kz_servicos_app/features/chat/presentation/cubit/messages_cubit.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 
 const _publicRoutes = {'/splash', '/login'};
 
@@ -61,13 +68,37 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: '/messages',
-        builder: (context, state) => const MessagesPage(),
+        builder: (context, state) {
+          final client = Supabase.instance.client;
+          final clientId = client.auth.currentUser!.id;
+          return BlocProvider(
+            create: (_) => MessagesCubit(
+              tripRepository: TripRepositoryImpl(client: client),
+              chatRepository: ChatRepositoryImpl(client: client),
+              clientId: clientId,
+            )..load(),
+            child: const MessagesPage(),
+          );
+        },
       ),
       GoRoute(
-        path: '/chat/:conversationId',
-        builder: (context, state) => ChatPage(
-          conversationId: state.pathParameters['conversationId']!,
-        ),
+        path: '/chat/:tripId',
+        builder: (context, state) {
+          final client = Supabase.instance.client;
+          final tripId = state.pathParameters['tripId']!;
+          final trip = state.extra as ScheduledTrip?;
+          return BlocProvider(
+            create: (_) => ChatCubit(
+              chatRepository: ChatRepositoryImpl(client: client),
+              currentUserId: client.auth.currentUser!.id,
+            )..init(
+                tripId,
+                tripOrigin: trip?.origin,
+                tripDestination: trip?.destination,
+              ),
+            child: const ChatPage(),
+          );
+        },
       ),
       GoRoute(
         path: '/wallet',
