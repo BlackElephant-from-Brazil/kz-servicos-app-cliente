@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/map_route_preview.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
@@ -182,6 +183,37 @@ class TripDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
+          if (['scheduled', 'started', 'finished'].contains(trip.status)) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                  label: const Text(
+                    'Abrir chat com motorista',
+                    style: TextStyle(
+                      fontFamily: 'QuasimodoSemiBold',
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/chat/${trip.id}', extra: trip);
+                  },
+                ),
+              ),
+            ),
+          ],
           SizedBox(
             height: MediaQuery.of(context).padding.bottom + 24,
           ),
