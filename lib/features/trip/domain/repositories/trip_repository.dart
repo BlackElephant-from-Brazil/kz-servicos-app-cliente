@@ -27,4 +27,8 @@ abstract class TripRepository {
     required String driverProfileId,
     String? vehicleId,
   });
+
+  /// Viagens com status schedulable para chat: scheduled, started, finished.
+  /// Ordenadas por scheduled_datetime decrescente.
+  Future<List<ScheduledTrip>> getChatEligibleTrips(String clientId);
 }
